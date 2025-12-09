@@ -1,0 +1,35 @@
+FROM quay.io/kairos/rockylinux:9-standard-amd64-generic-v3.6.0-k3s-v1.34.1-k3s1
+
+RUN yum update -y && yum install -y aide authselect chrony cronie firewalld systemd-journal-remote nftables openscap-scanner sudo scap-security-guide && rm -rf /var/cache/yum
+
+COPY config/aide.conf /etc/aide.conf
+COPY config/audit-sec.rules /etc/audit/rules.d/99-auditsec.rules
+COPY config/sshd_config_security.conf /etc/ssh/sshd_config.d/99-sshd_config_security.conf
+COPY config/auditd.conf /etc/audit/auditd.conf
+COPY config/login.defs /etc/login.defs
+COPY config/pamd_password-auth /etc/pam.d/password-auth
+COPY config/pamd_system-auth /etc/pam.d/system-auth
+COPY config/sysctl.conf /etc/sysctl.d/99-secfix.conf
+COPY config/useradd /etc/default/useradd
+COPY config/coredump.conf /etc/systemd/coredump.conf
+COPY config/bashrc /etc/bashrc
+COPY config/journald.conf /etc/systemd/journald.conf
+COPY config/load-sec.bash /load-sec.bash
+
+# Init Security
+RUN echo "05 4 * * * root /usr/sbin/aide --check" >> /etc/crontab \
+    && update-crypto-policies --set DEFAULT:NO-SHA1 && echo -e "Defaults use_pty\nDefaults logfile=/var/log/sudo.log\n" >> /etc/sudoers \
+    && echo "Authorized users only. All activity may be monitored and reported." > "/etc/issue" && ln -sf /etc/issue /etc/issue.net \
+    && echo -e 'SELINUX=enforcing\nSELINUXTYPE=targeted\n' > /etc/selinux/config && echo -e 'Defaults timestamp_timeout=5\n' >> /etc/sudoers \
+    && echo -e 'remember = 24\n' >> /etc/security/pwhistory.conf && echo -e 'deny = 5\neven_deny_root\nunlock_time = 900\n' >> /etc/security/faillock.conf \
+    && echo -e 'dictcheck = 1\ndifok = 2\nminlen = 14\nenforce_for_root\nmaxrepeat = 3\nminclass = 4\n' >> /etc/security/pwquality.conf && /usr/sbin/groupadd sugroup && gpasswd -M '' sugroup \
+    && echo -e 'umask 027\n' >> /etc/profile && echo -e 'typeset -xr TMOUT=900\n' >> /etc/profile.d/tmout.sh && echo -e 'auth             required        pam_wheel.so use_uid group=sugroup\n' >> /etc/pam.d/su \
+    && echo -e 'install dccp /bin/false\nblacklist dccp\n' > /etc/modprobe.d/dccp.conf && echo -e 'install sctp /bin/false\nblacklist sctp\n' > /etc/modprobe.d/sctp.conf \
+    && echo -e 'install usb-storage /bin/false\nblacklist usb-storage\n' > /etc/modprobe.d/usb-storage.conf && echo -e 'install rds /bin/false\nblacklist rds\n' > /etc/modprobe.d/rds.conf \
+    && echo -e 'install tipc /bin/false\nblacklist tipc\n' > /etc/modprobe.d/tipc.conf && echo -e 'install cramfs /bin/false\nblacklist cramfs\n' > /etc/modprobe.d/cramfs.conf \
+    && echo -e 'install freevxfs /bin/false\nblacklist freevxfs\n' > /etc/modprobe.d/freevxfs.conf && echo -e 'install hfs /bin/false\nblacklist hfs\n' > /etc/modprobe.d/hfs.conf \
+    && echo -e 'install hfsplus /bin/false\nblacklist hfsplus\n' > /etc/modprobe.d/hfsplus.conf &&  echo -e 'install jffs2 /bin/false\nblacklist jffs2\n' > /etc/modprobe.d/jffs2.conf \
+    && echo -e 'install squashfs /bin/false\nblacklist squashfs\n' > /etc/modprobe.d/squashfs.conf && echo -e 'install udf /bin/false\nblacklist udf\n' > /etc/modprobe.d/udf.conf \
+    && touch /etc/cron.allow && chown 0 /etc/cron.allow && chmod 0600 /etc/cron.allow && rm /etc/cron.deny && chmod 0700 /etc/cron.d && chmod 0700 /etc/cron.daily && chmod 0700 /etc/cron.hourly \
+    && chmod 0700 /etc/cron.monthly && chmod 0700 /etc/cron.weekly && chmod 0600 /etc/crontab && chmod 0640 /etc/audit/rules.d/99-auditsec.rules /etc/audit/rules.d/audit.rules \
+    && /usr/sbin/aide --init && mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz && /usr/sbin/aide --check
