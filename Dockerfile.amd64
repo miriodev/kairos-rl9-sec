@@ -1,6 +1,8 @@
 FROM quay.io/kairos/rockylinux:9-standard-amd64-generic-v3.6.0-k3s-v1.34.1-k3s1
 
-RUN yum update -y && yum install -y aide authselect chrony cronie firewalld systemd-journal-remote nftables openscap-scanner sudo scap-security-guide && rm -rf /var/cache/yum
+RUN yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm && yum update -y && yum install -y aide authselect awscli2 chrony container-selinux cronie \
+    firewalld netcat nftables openscap-scanner postgresql14 scap-security-guide sudo systemd-journal-remote systemd-networkd wget wireguard-tools \
+    && yum install -y "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-x86_64.rpm" && rm -rf /var/cache/yum
 
 COPY config/aide.conf /etc/aide.conf
 COPY config/audit-sec.rules /etc/audit/rules.d/99-auditsec.rules
@@ -32,4 +34,6 @@ RUN echo "05 4 * * * root /usr/sbin/aide --check" >> /etc/crontab \
     && echo -e 'install squashfs /bin/false\nblacklist squashfs\n' > /etc/modprobe.d/squashfs.conf && echo -e 'install udf /bin/false\nblacklist udf\n' > /etc/modprobe.d/udf.conf \
     && touch /etc/cron.allow && chown 0 /etc/cron.allow && chmod 0600 /etc/cron.allow && rm /etc/cron.deny && chmod 0700 /etc/cron.d && chmod 0700 /etc/cron.daily && chmod 0700 /etc/cron.hourly \
     && chmod 0700 /etc/cron.monthly && chmod 0700 /etc/cron.weekly && chmod 0600 /etc/crontab && chmod 0640 /etc/audit/rules.d/99-auditsec.rules /etc/audit/rules.d/audit.rules \
-    && /usr/sbin/aide --init && mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz && /usr/sbin/aide --check
+    && /usr/sbin/aide --init && mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz && /usr/sbin/aide --check && echo 'export KUBECONFIG="/etc/rancher/k3s/k3s.yaml"' >> /root/.bash_profile \
+    && mkdir /root/.aws && echo -e "[default]\noutput = json" > /root/.aws/config
+
