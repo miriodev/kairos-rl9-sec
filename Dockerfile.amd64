@@ -15,7 +15,6 @@ COPY config/coredump.conf /etc/systemd/coredump.conf
 COPY config/bashrc /etc/bashrc
 COPY config/journald.conf /etc/systemd/journald.conf
 COPY config/customization/* /customization
-COPY config/load-sec.bash /customization/load-sec.bash
 
 # Init Security
 RUN echo "05 4 * * * root /usr/sbin/aide --check" >> /etc/crontab \
