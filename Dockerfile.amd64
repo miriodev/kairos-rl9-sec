@@ -1,4 +1,4 @@
-FROM quay.io/kairos/rockylinux:9-standard-amd64-generic-v3.6.0-k3s-v1.34.1-k3s1
+FROM quay.io/kairos/rockylinux:9-standard-amd64-generic-v3.6.0-k3s-v1.33.5-k3s1
 
 RUN yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm && yum update -y && yum install -y aide authselect awscli2 chrony container-selinux cronie \
     firewalld netcat nftables openscap-scanner postgresql14 scap-security-guide sssd sudo systemd-journal-remote vim wget wireguard-tools \
